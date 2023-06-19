@@ -1,14 +1,15 @@
-package board
+package game
 
 import (
-	deck "kings-corner"
+	"kings-corner/deck"
 
 	"github.com/rs/xid"
 )
 
 func NewPlayer() Player {
 	return &kcPlayer{
-		id: xid.New().String(),
+		id:       xid.New().String(),
+		playTurn: nil,
 	}
 }
 
@@ -16,14 +17,14 @@ type Player interface {
 	ID() string
 	Draw(card deck.Card)
 	Play(card deck.Card)
-	SetPlayTurn(chan<- *PlayTurn)
+	SetPlayTurn(chan<- Turn)
 }
 
 type kcPlayer struct {
 	id   string
 	hand []deck.Card
 
-	playTurn chan<- *PlayTurn
+	playTurn chan<- Turn
 }
 
 func (p *kcPlayer) ID() string {
@@ -47,6 +48,6 @@ func (p *kcPlayer) Play(card deck.Card) {
 	p.hand = newHand
 }
 
-func (p *kcPlayer) SetPlayTurn(playTurn chan<- *PlayTurn) {
+func (p *kcPlayer) SetPlayTurn(playTurn chan<- Turn) {
 	p.playTurn = playTurn
 }

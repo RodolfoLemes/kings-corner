@@ -2,7 +2,15 @@
 
 package deck
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 type Color uint8
 
@@ -51,7 +59,7 @@ const (
 )
 
 const (
-	minRank = Ace
+	MinRank = Ace
 	MaxRank = King
 )
 
@@ -84,15 +92,17 @@ type Deck []Card
 func New() Deck {
 	var cards Deck
 	for _, suit := range suits {
-		for rank := minRank; rank <= MaxRank; rank++ {
+		for rank := MinRank; rank <= MaxRank; rank++ {
 			cards = append(cards, Card{Suit: suit, Rank: rank})
 		}
 	}
 	return cards
 }
 
-func (d *Deck) Shuffle() Deck {
-	return *d
+func (d *Deck) Shuffle() {
+	rand.Shuffle(len(*d), func(i, j int) {
+		(*d)[i], (*d)[j] = (*d)[j], (*d)[i]
+	})
 }
 
 func (d *Deck) Pop() *Card {
@@ -105,4 +115,16 @@ func (d *Deck) Pop() *Card {
 	*d = (*d)[1:]
 
 	return &card
+}
+
+func (d *Deck) PopNoKing() *Card {
+	card := d.Pop()
+
+	if card.Rank == King {
+		*d = append(*d, *card)
+		card := d.PopNoKing()
+		return card
+	}
+
+	return card
 }
