@@ -14,7 +14,7 @@ type turn struct {
 
 func (t turn) validateTurn(b Board) error {
 	if t.player.ID() != b.players[b.currentTurn].ID() {
-		return NewPlayerAccessError(t.player.ID(), IsNotPlayerTurn)
+		return newPlayerAccessError(t.player.ID(), IsNotPlayerTurn)
 	}
 
 	return nil
@@ -22,11 +22,11 @@ func (t turn) validateTurn(b Board) error {
 
 func (t turn) validateCardInsertion(initialCard deck.Card, insertionCard deck.Card) error {
 	if initialCard.IsSameColor(insertionCard) {
-		return NewPlayedCardError(t.player.ID(), DifferentColorCard)
+		return newPlayedCardError(t.player.ID(), DifferentColorCard)
 	}
 
 	if !initialCard.IsOneRankHigherThan(insertionCard) {
-		return NewPlayedCardError(t.player.ID(), OneRankLower)
+		return newPlayedCardError(t.player.ID(), OneRankLower)
 	}
 
 	return nil
@@ -51,7 +51,7 @@ func (ct *cardTurn) Play(b *Board) error {
 	selectedField := &b.Field[ct.fieldLevel]
 
 	if len(*selectedField) == int(deck.MaxRank) {
-		return NewFieldAccessError(FieldLevelFulfilled)
+		return newFieldAccessError(FieldLevelFulfilled)
 	}
 
 	if len(*selectedField) != 0 {
@@ -61,7 +61,7 @@ func (ct *cardTurn) Play(b *Board) error {
 			return err
 		}
 	} else if ct.card.Rank == deck.King && !b.isCorner(ct.fieldLevel) {
-		return NewPlayedCardError(ct.player.ID(), KingOnCorners)
+		return newPlayedCardError(ct.player.ID(), KingOnCorners)
 	}
 
 	*selectedField = append(*selectedField, ct.card)
@@ -93,19 +93,42 @@ func (mt *moveTurn) Play(b *Board) error {
 	selectedField := &b.Field[mt.fieldLevel[0]]
 
 	if len(*selectedField) < int(mt.fieldLevel[1]) {
-		return NewFieldAccessError(InvalidCardFieldIndex)
+		return newFieldAccessError(InvalidCardFieldIndex)
+	}
+
+	if len(*selectedField) == 0 {
+		return newFieldAccessError(NoCardsToMove)
 	}
 
 	selectedFieldCards := (*selectedField)[mt.fieldLevel[1]:]
 	comparableCard := selectedFieldCards[0]
 
 	moveToField := &b.Field[mt.moveToFieldLevel]
-	lastMoveToFieldCard := (*moveToField)[len(*moveToField)-1]
+	if len(*moveToField) != 0 {
+		lastMoveToFieldCard := (*moveToField)[len(*moveToField)-1]
 
-	if err := mt.validateCardInsertion(lastMoveToFieldCard, comparableCard); err != nil {
+		if err := mt.validateCardInsertion(lastMoveToFieldCard, comparableCard); err != nil {
+			return err
+		}
+	}
+
+	*moveToField = append(*moveToField, selectedFieldCards...)
+	*selectedField = (*selectedField)[:mt.fieldLevel[1]]
+
+	return nil
+}
+
+type passTurn struct {
+	turn
+}
+
+func (pt *passTurn) Play(b *Board) error {
+	if err := pt.validateTurn(*b); err != nil {
 		return err
 	}
 
-	// TODO
+	b.setNextTurn()
+	b.drawPlayerTurn()
+
 	return nil
 }

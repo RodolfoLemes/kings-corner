@@ -76,7 +76,7 @@ func TestValidateCardInsertionDifferentColor(t *testing.T) {
 	assert.EqualError(
 		t,
 		differentColorErr,
-		NewPlayedCardError(p.ID(), DifferentColorCard).Error(),
+		newPlayedCardError(p.ID(), DifferentColorCard).Error(),
 	)
 }
 
@@ -99,7 +99,7 @@ func TestValidateCardInsertionNotOneRankHigherThan(t *testing.T) {
 	assert.EqualError(
 		t,
 		notOneRankHigher,
-		NewPlayedCardError(p.ID(), OneRankLower).Error(),
+		newPlayedCardError(p.ID(), OneRankLower).Error(),
 	)
 }
 
@@ -121,27 +121,27 @@ func TestCardTurnPlay(t *testing.T) {
 
 	err := ct.Play(&b)
 	assert.Error(t, err, "isn't player turn")
-	assert.IsType(t, err, &PlayerAccessError{})
+	assert.IsType(t, err, &playerAccessError{})
 
 	b.setNextTurn()
 	b.setNextTurn()
 	ct.fieldLevel = 9
 	err = ct.Play(&b)
 	assert.Error(t, err, "invalid field access")
-	assert.IsType(t, err, &FieldAccessError{})
+	assert.IsType(t, err, &fieldAccessError{})
 
 	fieldLevelFulfilled := uint8(fieldLevel) + 1
 	b.Field[fieldLevelFulfilled] = make([]deck.Card, 13)
 	ct.fieldLevel = fieldLevelFulfilled
 	err = ct.Play(&b)
 	assert.Error(t, err, "field level fulfilled")
-	assert.IsType(t, err, &FieldAccessError{})
+	assert.IsType(t, err, &fieldAccessError{})
 
 	ct.fieldLevel = uint8(fieldLevel)
 	ct.card = fieldCards[0]
 	err = ct.Play(&b)
 	assert.Error(t, err, "bad card played")
-	assert.IsType(t, err, &PlayedCardError{})
+	assert.IsType(t, err, &playedCardError{})
 
 	fieldLevelEmpty := uint8(fieldLevel) + 1
 	b.Field[fieldLevelEmpty] = []deck.Card{}
@@ -149,7 +149,7 @@ func TestCardTurnPlay(t *testing.T) {
 	ct.card = deck.Card{Suit: deck.Diamond, Rank: deck.King}
 	err = ct.Play(&b)
 	assert.Error(t, err, "king on non corners")
-	assert.IsType(t, err, &PlayedCardError{})
+	assert.IsType(t, err, &playedCardError{})
 
 	ct.card = validCard
 	ct.fieldLevel = uint8(fieldLevel)
@@ -196,4 +196,83 @@ func assertPlayedCardTurn(t *testing.T, p Player, validCard deck.Card, fieldCard
 		}
 	}
 	assert.False(t, playedCardHandExists)
+}
+
+func TestMoveTurnPlay(t *testing.T) {
+	p := NewPlayer()
+	b := setupBoardWithPlayers(p)
+
+	fieldLevel := [2]uint8{0, 0}
+	moveToFieldLevel := 1
+
+	b.Field[0][0] = deck.Card{Suit: deck.Club, Rank: deck.Two}
+	b.Field[0] = append(b.Field[0], deck.Card{Suit: deck.Diamond, Rank: deck.Ace})
+	b.Field[moveToFieldLevel][0] = deck.Card{Suit: deck.Heart, Rank: deck.Three}
+
+	mt := &moveTurn{
+		fieldLevel:       fieldLevel,
+		moveToFieldLevel: uint8(moveToFieldLevel),
+		turn:             turn{p},
+	}
+
+	err := mt.Play(&b)
+	assert.Error(t, err, "isn't player turn")
+	assert.IsType(t, err, &playerAccessError{})
+
+	b.setNextTurn()
+	b.setNextTurn()
+	err = mt.Play(&b)
+	assert.Nil(t, err)
+	assert.Len(t, b.Field[0], 0)
+	assert.Len(t, b.Field[moveToFieldLevel], 3)
+
+	invalidFieldLevel := [2]uint8{9, 1}
+	mt.fieldLevel = invalidFieldLevel
+	err = mt.Play(&b)
+	assert.Error(t, err, "invalid field access")
+	assert.IsType(t, err, &fieldAccessError{})
+
+	invalidMoveToFieldLevel := 9
+	mt.moveToFieldLevel = uint8(invalidMoveToFieldLevel)
+	err = mt.Play(&b)
+	assert.Error(t, err, "invalid move to field access")
+	assert.IsType(t, err, &fieldAccessError{})
+
+	mt.fieldLevel = fieldLevel
+	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	err = mt.Play(&b)
+	assert.Error(t, err, "no card on selected field")
+	assert.IsType(t, err, &fieldAccessError{})
+
+	mt.fieldLevel = [2]uint8{0, 1}
+	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	err = mt.Play(&b)
+	assert.Error(t, err, "invalid card field index")
+	assert.IsType(t, err, &fieldAccessError{})
+
+	b.Field[0] = append(b.Field[0], deck.Card{Suit: deck.Club, Rank: deck.Four})
+	mt.fieldLevel = fieldLevel
+	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	err = mt.Play(&b)
+	assert.Error(t, err, "invalid card validation")
+	assert.IsType(t, err, &playedCardError{})
+}
+
+func TestPassTurnPlay(t *testing.T) {
+	p := NewPlayer()
+	b := setupBoardWithPlayers(p)
+
+	pt := &passTurn{
+		turn: turn{p},
+	}
+
+	err := pt.Play(&b)
+	assert.Error(t, err, "isn't player turn")
+	assert.IsType(t, err, &playerAccessError{})
+
+	b.setNextTurn()
+	b.setNextTurn()
+
+	err = pt.Play(&b)
+	assert.Nil(t, err)
 }

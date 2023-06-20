@@ -44,9 +44,13 @@ func TestDrawPlayersHand(t *testing.T) {
 
 	b.drawPlayersHand()
 
-	for _, p := range b.players {
+	for i, p := range b.players {
 		kcPlayer := p.(*kcPlayer)
 
+		if i == int(b.currentTurn) {
+			assert.Equal(t, len(kcPlayer.hand), INITIAL_HAND_CARDS+1)
+			continue
+		}
 		assert.Equal(t, len(kcPlayer.hand), INITIAL_HAND_CARDS)
 	}
 }
@@ -106,4 +110,16 @@ func TestSetNextTurn(t *testing.T) {
 
 	b.setNextTurn()
 	assert.Equal(t, b.currentTurn, uint8(1))
+}
+
+func TestDrawPlayerTurn(t *testing.T) {
+	b := setupBoard()
+
+	b.Join(NewPlayer())
+	b.Join(NewPlayer())
+
+	b.drawPlayerTurn()
+
+	kcPlayer := b.players[b.currentTurn].(*kcPlayer)
+	assert.Len(t, kcPlayer.hand, 1)
 }

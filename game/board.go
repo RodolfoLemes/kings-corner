@@ -1,8 +1,6 @@
 package game
 
 import (
-	"fmt"
-
 	"kings-corner/deck"
 )
 
@@ -50,6 +48,8 @@ func (b *Board) drawPlayersHand() {
 
 		b.players[playerSelection].Draw(card)
 	}
+
+	b.drawPlayerTurn()
 }
 
 func (b *Board) buildField() {
@@ -70,27 +70,8 @@ func (b *Board) isCorner(fieldLevel uint8) bool {
 
 func (b *Board) checkFieldLevel(fieldLevel uint8) error {
 	if fieldLevel > FIELDS_NUMBER-1 {
-		return NewFieldAccessError(FieldLevelDoesNotExist)
+		return newFieldAccessError(FieldLevelDoesNotExist)
 	}
-
-	return nil
-}
-
-func (b *Board) run() {
-	for {
-		select {
-		case t := <-b.PlayTurn:
-			b.play(t)
-		default:
-			fmt.Println("End Game")
-			return
-		}
-	}
-}
-
-func (b *Board) play(t Turn) error {
-	t.Play(b)
-	b.setNextTurn()
 
 	return nil
 }
@@ -101,4 +82,47 @@ func (b *Board) setNextTurn() {
 	if int(b.currentTurn) == len(b.players) {
 		b.currentTurn = 0
 	}
+}
+
+func (b *Board) drawPlayerTurn() {
+	card := b.Deck.Pop()
+	b.players[b.currentTurn].Draw(*card)
+}
+
+func (b *Board) run() {
+	for {
+		select {
+		case t := <-b.PlayTurn:
+			b.play(t)
+		default:
+			return
+		}
+	}
+}
+
+func (b *Board) play(t Turn) {
+	err := t.Play(b)
+	if err != nil {
+		return
+	}
+
+	if b.hasWinner() {
+		b.endGame()
+	}
+
+	return
+}
+
+func (b *Board) hasWinner() bool {
+	for _, p := range b.players {
+		if p.IsWinner() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (b *Board) endGame() {
+	close(b.PlayTurn)
 }

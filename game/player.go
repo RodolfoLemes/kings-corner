@@ -18,6 +18,7 @@ type Player interface {
 	Draw(card deck.Card)
 	Play(card deck.Card)
 	SetPlayTurn(chan<- Turn)
+	IsWinner() bool
 }
 
 type kcPlayer struct {
@@ -50,4 +51,8 @@ func (p *kcPlayer) Play(card deck.Card) {
 
 func (p *kcPlayer) SetPlayTurn(playTurn chan<- Turn) {
 	p.playTurn = playTurn
+}
+
+func (p *kcPlayer) IsWinner() bool {
+	return len(p.hand) == 0
 }
