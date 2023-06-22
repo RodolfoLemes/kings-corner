@@ -3,7 +3,7 @@ package game
 import (
 	"testing"
 
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -111,11 +111,11 @@ func TestCardTurnPlay(t *testing.T) {
 	fieldCards := b.Field[fieldLevel]
 	validCard := getNextValidCard(fieldCards[0])
 
-	b.players[2].Draw(validCard)
+	b.Players[2].Draw(validCard)
 
-	ct := &cardTurn{
-		fieldLevel: uint8(fieldLevel),
-		card:       validCard,
+	ct := &CardTurn{
+		FieldLevel: uint8(fieldLevel),
+		Card:       validCard,
 		turn:       turn{p},
 	}
 
@@ -125,45 +125,45 @@ func TestCardTurnPlay(t *testing.T) {
 
 	b.setNextTurn()
 	b.setNextTurn()
-	ct.fieldLevel = 9
+	ct.FieldLevel = 9
 	err = ct.Play(&b)
 	assert.Error(t, err, "invalid field access")
 	assert.IsType(t, err, &fieldAccessError{})
 
 	fieldLevelFulfilled := uint8(fieldLevel) + 1
 	b.Field[fieldLevelFulfilled] = make([]deck.Card, 13)
-	ct.fieldLevel = fieldLevelFulfilled
+	ct.FieldLevel = fieldLevelFulfilled
 	err = ct.Play(&b)
 	assert.Error(t, err, "field level fulfilled")
 	assert.IsType(t, err, &fieldAccessError{})
 
-	ct.fieldLevel = uint8(fieldLevel)
-	ct.card = fieldCards[0]
+	ct.FieldLevel = uint8(fieldLevel)
+	ct.Card = fieldCards[0]
 	err = ct.Play(&b)
 	assert.Error(t, err, "bad card played")
 	assert.IsType(t, err, &playedCardError{})
 
 	fieldLevelEmpty := uint8(fieldLevel) + 1
 	b.Field[fieldLevelEmpty] = []deck.Card{}
-	ct.fieldLevel = fieldLevelEmpty
-	ct.card = deck.Card{Suit: deck.Diamond, Rank: deck.King}
+	ct.FieldLevel = fieldLevelEmpty
+	ct.Card = deck.Card{Suit: deck.Diamond, Rank: deck.King}
 	err = ct.Play(&b)
 	assert.Error(t, err, "king on non corners")
 	assert.IsType(t, err, &playedCardError{})
 
-	ct.card = validCard
-	ct.fieldLevel = uint8(fieldLevel)
+	ct.Card = validCard
+	ct.FieldLevel = uint8(fieldLevel)
 	err = ct.Play(&b)
 	assert.Nil(t, err, "played normal card")
-	assertPlayedCardTurn(t, p, validCard, b.Field[ct.fieldLevel])
+	assertPlayedCardTurn(t, p, validCard, b.Field[ct.FieldLevel])
 
 	kingCard := deck.Card{Suit: deck.Diamond, Rank: deck.King}
 	p.Draw(kingCard)
-	ct.card = kingCard
-	ct.fieldLevel = 4
+	ct.Card = kingCard
+	ct.FieldLevel = 4
 	err = ct.Play(&b)
 	assert.Nil(t, err, "played king card on corner")
-	assertPlayedCardTurn(t, p, kingCard, b.Field[ct.fieldLevel])
+	assertPlayedCardTurn(t, p, kingCard, b.Field[ct.FieldLevel])
 }
 
 func getNextValidCard(c deck.Card) deck.Card {
@@ -209,9 +209,9 @@ func TestMoveTurnPlay(t *testing.T) {
 	b.Field[0] = append(b.Field[0], deck.Card{Suit: deck.Diamond, Rank: deck.Ace})
 	b.Field[moveToFieldLevel][0] = deck.Card{Suit: deck.Heart, Rank: deck.Three}
 
-	mt := &moveTurn{
-		fieldLevel:       fieldLevel,
-		moveToFieldLevel: uint8(moveToFieldLevel),
+	mt := &MoveTurn{
+		FieldLevel:       fieldLevel,
+		MoveToFieldLevel: uint8(moveToFieldLevel),
 		turn:             turn{p},
 	}
 
@@ -227,32 +227,32 @@ func TestMoveTurnPlay(t *testing.T) {
 	assert.Len(t, b.Field[moveToFieldLevel], 3)
 
 	invalidFieldLevel := [2]uint8{9, 1}
-	mt.fieldLevel = invalidFieldLevel
+	mt.FieldLevel = invalidFieldLevel
 	err = mt.Play(&b)
 	assert.Error(t, err, "invalid field access")
 	assert.IsType(t, err, &fieldAccessError{})
 
 	invalidMoveToFieldLevel := 9
-	mt.moveToFieldLevel = uint8(invalidMoveToFieldLevel)
+	mt.MoveToFieldLevel = uint8(invalidMoveToFieldLevel)
 	err = mt.Play(&b)
 	assert.Error(t, err, "invalid move to field access")
 	assert.IsType(t, err, &fieldAccessError{})
 
-	mt.fieldLevel = fieldLevel
-	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	mt.FieldLevel = fieldLevel
+	mt.MoveToFieldLevel = uint8(moveToFieldLevel)
 	err = mt.Play(&b)
 	assert.Error(t, err, "no card on selected field")
 	assert.IsType(t, err, &fieldAccessError{})
 
-	mt.fieldLevel = [2]uint8{0, 1}
-	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	mt.FieldLevel = [2]uint8{0, 1}
+	mt.MoveToFieldLevel = uint8(moveToFieldLevel)
 	err = mt.Play(&b)
 	assert.Error(t, err, "invalid card field index")
 	assert.IsType(t, err, &fieldAccessError{})
 
 	b.Field[0] = append(b.Field[0], deck.Card{Suit: deck.Club, Rank: deck.Four})
-	mt.fieldLevel = fieldLevel
-	mt.moveToFieldLevel = uint8(moveToFieldLevel)
+	mt.FieldLevel = fieldLevel
+	mt.MoveToFieldLevel = uint8(moveToFieldLevel)
 	err = mt.Play(&b)
 	assert.Error(t, err, "invalid card validation")
 	assert.IsType(t, err, &playedCardError{})
@@ -262,7 +262,7 @@ func TestPassTurnPlay(t *testing.T) {
 	p := NewPlayer()
 	b := setupBoardWithPlayers(p)
 
-	pt := &passTurn{
+	pt := &PassTurn{
 		turn: turn{p},
 	}
 

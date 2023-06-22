@@ -3,7 +3,7 @@ package game
 import (
 	"testing"
 
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,8 +20,8 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, b.Deck, d)
 	assert.Equal(t, len(b.Field), int(FIELDS_NUMBER))
 	assert.NotNil(t, b.PlayTurn)
-	assert.Empty(t, b.players)
-	assert.Equal(t, int(b.currentTurn), 0)
+	assert.Empty(t, b.Players)
+	assert.Equal(t, int(b.CurrentTurn), 0)
 }
 
 func TestJoin(t *testing.T) {
@@ -31,8 +31,8 @@ func TestJoin(t *testing.T) {
 
 	b.Join(player)
 
-	assert.NotEmpty(t, b.players)
-	assert.Equal(t, b.players[0].ID(), player.ID())
+	assert.NotEmpty(t, b.Players)
+	assert.Equal(t, b.Players[0].ID(), player.ID())
 }
 
 func TestDrawPlayersHand(t *testing.T) {
@@ -44,10 +44,10 @@ func TestDrawPlayersHand(t *testing.T) {
 
 	b.drawPlayersHand()
 
-	for i, p := range b.players {
+	for i, p := range b.Players {
 		kcPlayer := p.(*kcPlayer)
 
-		if i == int(b.currentTurn) {
+		if i == int(b.CurrentTurn) {
 			assert.Equal(t, len(kcPlayer.hand), INITIAL_HAND_CARDS+1)
 			continue
 		}
@@ -103,13 +103,13 @@ func TestSetNextTurn(t *testing.T) {
 	b.Join(NewPlayer())
 
 	b.setNextTurn()
-	assert.Equal(t, b.currentTurn, uint8(1))
+	assert.Equal(t, b.CurrentTurn, uint8(1))
 
 	b.setNextTurn()
-	assert.Equal(t, b.currentTurn, uint8(0))
+	assert.Equal(t, b.CurrentTurn, uint8(0))
 
 	b.setNextTurn()
-	assert.Equal(t, b.currentTurn, uint8(1))
+	assert.Equal(t, b.CurrentTurn, uint8(1))
 }
 
 func TestDrawPlayerTurn(t *testing.T) {
@@ -120,6 +120,6 @@ func TestDrawPlayerTurn(t *testing.T) {
 
 	b.drawPlayerTurn()
 
-	kcPlayer := b.players[b.currentTurn].(*kcPlayer)
+	kcPlayer := b.Players[b.CurrentTurn].(*kcPlayer)
 	assert.Len(t, kcPlayer.hand, 1)
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -54,7 +54,7 @@ func TestPlay(t *testing.T) {
 func TestSetPlayTurn(t *testing.T) {
 	player := NewPlayer()
 
-	player.SetPlayTurn(make(chan<- Turn))
+	player.setPlayTurn(make(chan<- Turn))
 
 	kcPLayer := player.(*kcPlayer)
 

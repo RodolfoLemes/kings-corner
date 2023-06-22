@@ -1,7 +1,8 @@
 package game
 
 import (
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
+	"kings-corner/internal/pubsub"
 )
 
 const (
@@ -14,21 +15,27 @@ type Board struct {
 	Field    [FIELDS_NUMBER][]deck.Card
 	PlayTurn chan Turn
 
-	players     []Player
-	currentTurn uint8
+	Players     []Player
+	CurrentTurn uint8
+
+	pubsub pubsub.PubSub[Board]
 }
 
 func New(d deck.Deck) Board {
-	return Board{d, [8][]deck.Card{}, make(chan Turn), []Player{}, 0}
+	return Board{d, [8][]deck.Card{}, make(chan Turn), []Player{}, 0, pubsub.New[Board]()}
+}
+
+func (b *Board) Listen() Board {
+	return <-b.pubsub.Subscribe("game")
 }
 
 func (b *Board) Join(p Player) {
-	p.SetPlayTurn(b.PlayTurn)
+	p.setPlayTurn(b.PlayTurn)
 
-	b.players = append(b.players, p)
+	b.Players = append(b.Players, p)
 }
 
-func (b *Board) Init() {
+func (b *Board) Run() {
 	// maximum players treatment
 	b.Deck.Shuffle()
 
@@ -40,13 +47,13 @@ func (b *Board) Init() {
 }
 
 func (b *Board) drawPlayersHand() {
-	totalCards := INITIAL_HAND_CARDS * len(b.players)
+	totalCards := INITIAL_HAND_CARDS * len(b.Players)
 
 	for i := 0; i < totalCards; i++ {
 		card := *b.Deck.Pop()
-		playerSelection := i % len(b.players)
+		playerSelection := i % len(b.Players)
 
-		b.players[playerSelection].Draw(card)
+		b.Players[playerSelection].Draw(card)
 	}
 
 	b.drawPlayerTurn()
@@ -77,25 +84,25 @@ func (b *Board) checkFieldLevel(fieldLevel uint8) error {
 }
 
 func (b *Board) setNextTurn() {
-	b.currentTurn++
+	b.CurrentTurn++
 
-	if int(b.currentTurn) == len(b.players) {
-		b.currentTurn = 0
+	if int(b.CurrentTurn) == len(b.Players) {
+		b.CurrentTurn = 0
 	}
 }
 
 func (b *Board) drawPlayerTurn() {
 	card := b.Deck.Pop()
-	b.players[b.currentTurn].Draw(*card)
+	b.Players[b.CurrentTurn].Draw(*card)
 }
 
 func (b *Board) run() {
+	b.pubsub.Publish("game", *b)
+
 	for {
 		select {
 		case t := <-b.PlayTurn:
 			b.play(t)
-		default:
-			return
 		}
 	}
 }
@@ -110,11 +117,13 @@ func (b *Board) play(t Turn) {
 		b.endGame()
 	}
 
+	b.pubsub.Publish("game", *b)
+
 	return
 }
 
 func (b *Board) hasWinner() bool {
-	for _, p := range b.players {
+	for _, p := range b.Players {
 		if p.IsWinner() {
 			return true
 		}

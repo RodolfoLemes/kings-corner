@@ -1,11 +1,12 @@
 package game
 
 import (
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 )
 
 type Turn interface {
 	Play(b *Board) error
+	setPlayer(Player)
 }
 
 type turn struct {
@@ -13,7 +14,7 @@ type turn struct {
 }
 
 func (t turn) validateTurn(b Board) error {
-	if t.player.ID() != b.players[b.currentTurn].ID() {
+	if t.player.ID() != b.Players[b.CurrentTurn].ID() {
 		return newPlayerAccessError(t.player.ID(), IsNotPlayerTurn)
 	}
 
@@ -32,23 +33,33 @@ func (t turn) validateCardInsertion(initialCard deck.Card, insertionCard deck.Ca
 	return nil
 }
 
-type cardTurn struct {
-	fieldLevel uint8
-	card       deck.Card
+func (t *turn) setPlayer(p Player) {
+	t.player = p
+}
+
+func NewTurn[T Turn](player Player, turn T) T {
+	turn.setPlayer(player)
+
+	return turn
+}
+
+type CardTurn struct {
+	FieldLevel uint8
+	Card       deck.Card
 
 	turn
 }
 
-func (ct *cardTurn) Play(b *Board) error {
+func (ct *CardTurn) Play(b *Board) error {
 	if err := ct.validateTurn(*b); err != nil {
 		return err
 	}
 
-	if err := b.checkFieldLevel(ct.fieldLevel); err != nil {
+	if err := b.checkFieldLevel(ct.FieldLevel); err != nil {
 		return err
 	}
 
-	selectedField := &b.Field[ct.fieldLevel]
+	selectedField := &b.Field[ct.FieldLevel]
 
 	if len(*selectedField) == int(deck.MaxRank) {
 		return newFieldAccessError(FieldLevelFulfilled)
@@ -57,42 +68,42 @@ func (ct *cardTurn) Play(b *Board) error {
 	if len(*selectedField) != 0 {
 		lastFieldCard := (*selectedField)[len(*selectedField)-1]
 
-		if err := ct.validateCardInsertion(lastFieldCard, ct.card); err != nil {
+		if err := ct.validateCardInsertion(lastFieldCard, ct.Card); err != nil {
 			return err
 		}
-	} else if ct.card.Rank == deck.King && !b.isCorner(ct.fieldLevel) {
+	} else if ct.Card.Rank == deck.King && !b.isCorner(ct.FieldLevel) {
 		return newPlayedCardError(ct.player.ID(), KingOnCorners)
 	}
 
-	*selectedField = append(*selectedField, ct.card)
-	ct.player.Play(ct.card)
+	*selectedField = append(*selectedField, ct.Card)
+	ct.player.Play(ct.Card)
 
 	return nil
 }
 
-type moveTurn struct {
-	fieldLevel       [2]uint8
-	moveToFieldLevel uint8
+type MoveTurn struct {
+	FieldLevel       [2]uint8
+	MoveToFieldLevel uint8
 
 	turn
 }
 
-func (mt *moveTurn) Play(b *Board) error {
+func (mt *MoveTurn) Play(b *Board) error {
 	if err := mt.validateTurn(*b); err != nil {
 		return err
 	}
 
-	if err := b.checkFieldLevel(mt.fieldLevel[0]); err != nil {
+	if err := b.checkFieldLevel(mt.FieldLevel[0]); err != nil {
 		return err
 	}
 
-	if err := b.checkFieldLevel(mt.moveToFieldLevel); err != nil {
+	if err := b.checkFieldLevel(mt.MoveToFieldLevel); err != nil {
 		return err
 	}
 
-	selectedField := &b.Field[mt.fieldLevel[0]]
+	selectedField := &b.Field[mt.FieldLevel[0]]
 
-	if len(*selectedField) < int(mt.fieldLevel[1]) {
+	if len(*selectedField) < int(mt.FieldLevel[1]) {
 		return newFieldAccessError(InvalidCardFieldIndex)
 	}
 
@@ -100,10 +111,10 @@ func (mt *moveTurn) Play(b *Board) error {
 		return newFieldAccessError(NoCardsToMove)
 	}
 
-	selectedFieldCards := (*selectedField)[mt.fieldLevel[1]:]
+	selectedFieldCards := (*selectedField)[mt.FieldLevel[1]:]
 	comparableCard := selectedFieldCards[0]
 
-	moveToField := &b.Field[mt.moveToFieldLevel]
+	moveToField := &b.Field[mt.MoveToFieldLevel]
 	if len(*moveToField) != 0 {
 		lastMoveToFieldCard := (*moveToField)[len(*moveToField)-1]
 
@@ -113,16 +124,16 @@ func (mt *moveTurn) Play(b *Board) error {
 	}
 
 	*moveToField = append(*moveToField, selectedFieldCards...)
-	*selectedField = (*selectedField)[:mt.fieldLevel[1]]
+	*selectedField = (*selectedField)[:mt.FieldLevel[1]]
 
 	return nil
 }
 
-type passTurn struct {
+type PassTurn struct {
 	turn
 }
 
-func (pt *passTurn) Play(b *Board) error {
+func (pt *PassTurn) Play(b *Board) error {
 	if err := pt.validateTurn(*b); err != nil {
 		return err
 	}

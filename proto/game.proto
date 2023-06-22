@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "kings-corner/pkg/pb/game;pb";
+
+service GameService {
+  rpc Create(CreateRequest) returns (stream CreateResponse) {}
+  rpc Begin(BeginRequest) returns (stream BeginResponse) {}
+}
+
+message CreateRequest {}
+
+message CreateResponse {
+  string id = 1;
+  repeated string player_ids = 2;
+}
+
+message BeginRequest {
+  string id = 1;
+}
+
+message BeginResponse {
+  Board board = 1;
+}
+
+message Card {
+  uint32 Suit = 1;
+  uint32 Rank = 2;
+}
+
+message Board {
+  message Field {
+    uint32 field_number = 1;
+    repeated Card cards = 2;
+  }
+
+  string id = 1;
+  repeated string player_ids = 2;
+  repeated Field fields = 3;
+  uint32 current_turn = 4;
+}
+
+service PlayerService {
+  rpc Join(JoinRequest) returns (stream JoinResponse);
+  rpc Play(PlayRequest) returns (PlayResponse);
+}
+
+message JoinRequest {
+  string game_id = 1;
+}
+
+message JoinResponse {
+  Board board = 1;
+  string player_id = 2;
+  repeated Card hand = 3;
+  bool is_player_turn = 4;
+}
+
+message PlayRequest {
+  enum Turn {
+    CARD = 0;
+    MOVE = 1;
+    PASS = 2;
+  }
+
+  message CardTurn {
+    uint32 field_level = 1;
+    Card card = 2;
+  }
+
+  message MoveTurn {
+    repeated uint32 field_card_level = 1;
+    uint32 move_to_field_level = 2;
+  }
+
+  string game_id = 1;
+  string player_id = 2;
+  Turn turn = 3;
+  CardTurn card_turn = 4;
+  MoveTurn move_turn = 5;
+}
+
+message PlayResponse {}

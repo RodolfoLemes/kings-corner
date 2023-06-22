@@ -1,7 +1,7 @@
 package game
 
 import (
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 
 	"github.com/rs/xid"
 )
@@ -15,9 +15,11 @@ func NewPlayer() Player {
 
 type Player interface {
 	ID() string
+	Hand() []deck.Card
 	Draw(card deck.Card)
 	Play(card deck.Card)
-	SetPlayTurn(chan<- Turn)
+	PlayTurn(t Turn)
+	setPlayTurn(chan<- Turn)
 	IsWinner() bool
 }
 
@@ -30,6 +32,10 @@ type kcPlayer struct {
 
 func (p *kcPlayer) ID() string {
 	return p.id
+}
+
+func (p *kcPlayer) Hand() []deck.Card {
+	return p.hand
 }
 
 func (p *kcPlayer) Draw(card deck.Card) {
@@ -49,7 +55,12 @@ func (p *kcPlayer) Play(card deck.Card) {
 	p.hand = newHand
 }
 
-func (p *kcPlayer) SetPlayTurn(playTurn chan<- Turn) {
+func (p *kcPlayer) PlayTurn(turn Turn) {
+	turn.setPlayer(p)
+	p.playTurn <- turn
+}
+
+func (p *kcPlayer) setPlayTurn(playTurn chan<- Turn) {
 	p.playTurn = playTurn
 }
 

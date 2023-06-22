@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"kings-corner/deck"
+	"kings-corner/internal/deck"
 
 	"github.com/stretchr/testify/assert"
 )
