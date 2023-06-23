@@ -5,24 +5,17 @@ package pb;
 option go_package = "kings-corner/pkg/pb/game;pb";
 
 service GameService {
-  rpc Create(CreateRequest) returns (stream CreateResponse) {}
-  rpc Begin(BeginRequest) returns (stream BeginResponse) {}
+  rpc Create(CreateRequest) returns (stream JoinResponse) {}
+  rpc Begin(BeginRequest) returns (BeginResponse) {}
 }
 
 message CreateRequest {}
-
-message CreateResponse {
-  string id = 1;
-  repeated string player_ids = 2;
-}
 
 message BeginRequest {
   string id = 1;
 }
 
-message BeginResponse {
-  Board board = 1;
-}
+message BeginResponse {}
 
 message Card {
   uint32 Suit = 1;

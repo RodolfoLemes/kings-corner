@@ -142,24 +142,11 @@ func Run() {
 					{
 						Name: "begin",
 						Action: func(cCtx *cli.Context) error {
-							stream, err := gameClient.Begin(context.TODO(), &pb.BeginRequest{
+							_, err := gameClient.Begin(context.TODO(), &pb.BeginRequest{
 								Id: "example",
 							})
 							if err != nil {
 								return err
-							}
-
-							for {
-								stream, err := stream.Recv()
-								if err != nil {
-									log.Fatalf("Could not receive the message: %v", err)
-								}
-
-								if err == io.EOF {
-									break
-								}
-
-								fmt.Printf("game.stream.Board: %v\n", stream.Board)
 							}
 
 							return nil

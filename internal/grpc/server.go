@@ -17,21 +17,23 @@ type Server interface {
 
 type gRPCServer struct {
 	storage storage.Storage
+	*GameService
+	*PlayerService
 }
 
-func New(s storage.Storage) Server {
-	return &gRPCServer{s}
+func New(s storage.Storage, g *GameService, p *PlayerService) Server {
+	return &gRPCServer{s, g, p}
 }
 
-func (*gRPCServer) Run() {
+func (gRPC *gRPCServer) Run() {
 	lis, err := net.Listen("tcp", "localhost:50051")
 	if err != nil {
 		log.Fatalf("Could not connected: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterGameServiceServer(grpcServer, &GameService{})
-	pb.RegisterPlayerServiceServer(grpcServer, &PlayerService{})
+	pb.RegisterGameServiceServer(grpcServer, gRPC.GameService)
+	pb.RegisterPlayerServiceServer(grpcServer, gRPC.PlayerService)
 
 	reflection.Register(grpcServer)
 
