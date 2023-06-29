@@ -32,6 +32,7 @@ message Board {
   repeated string player_ids = 2;
   repeated Field fields = 3;
   uint32 current_turn = 4;
+  bool is_started = 5;
 }
 
 service PlayerService {

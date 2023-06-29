@@ -25,20 +25,19 @@ func (bs *BoardService) Create() (*game.Board, error) {
 
 	d := deck.New()
 	board := game.New(d)
-
-	sBoard, err := bs.boardRepository.Create(board)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = bs.playerRepository.JoinBoard(sBoard.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	board.Join(player)
 
-	return &board, nil
+	sBoard, err := bs.boardRepository.Create(*board)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = bs.playerRepository.Create(player, sBoard.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return board, nil
 }
 
 func (bs *BoardService) Join(boardID string) (*game.Board, *game.Player, error) {
@@ -50,7 +49,12 @@ func (bs *BoardService) Join(boardID string) (*game.Board, *game.Player, error) 
 	player := game.NewPlayer()
 	board.Join(player)
 
-	_, err = bs.playerRepository.JoinBoard(boardID)
+	err = bs.boardRepository.Update(board.Board)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = bs.playerRepository.Create(player, boardID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -64,9 +68,7 @@ func (bs *BoardService) Run(boardID string) error {
 		return err
 	}
 
-	go board.Run()
-
-	return nil
+	return board.Run()
 }
 
 func (bs *BoardService) Play(boardID string, playerID string, turn game.Turn) error {
@@ -92,7 +94,7 @@ func (bs *BoardService) Play(boardID string, playerID string, turn game.Turn) er
 		}
 	}
 
-	player.PlayTurn(turn)
+	err = player.Play(turn)
 
-	return nil
+	return err
 }

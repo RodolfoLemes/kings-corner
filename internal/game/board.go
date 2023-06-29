@@ -1,8 +1,12 @@
 package game
 
 import (
+	"fmt"
+
 	"kings-corner/internal/deck"
 	"kings-corner/internal/pubsub"
+
+	"github.com/rs/xid"
 )
 
 const (
@@ -11,49 +15,58 @@ const (
 )
 
 type Board struct {
-	Deck     deck.Deck
-	Field    [FIELDS_NUMBER][]deck.Card
-	PlayTurn chan Turn
-
-	Players     []Player
+	ID          string
 	CurrentTurn uint8
+	IsStarted   bool
+	Field       [FIELDS_NUMBER][]deck.Card
+
+	deck    deck.Deck
+	Players []Player
 
 	pubsub pubsub.PubSub[Board]
 }
 
-func New(d deck.Deck) Board {
-	return Board{d, [8][]deck.Card{}, make(chan Turn), []Player{}, 0, pubsub.New[Board]()}
+func New(d deck.Deck) *Board {
+	return &Board{
+		ID:      xid.New().String(),
+		Field:   [FIELDS_NUMBER][]deck.Card{},
+		deck:    d,
+		Players: []Player{},
+		pubsub:  pubsub.New[Board](),
+	}
 }
 
 func (b *Board) Listen() Board {
-	return <-b.pubsub.Subscribe("game")
+	return <-b.pubsub.Subscribe(b.channel())
+}
+
+func (b Board) channel() string {
+	return fmt.Sprintf("game:%s", b.ID)
 }
 
 func (b *Board) Join(p Player) {
-	p.setPlayTurn(b.PlayTurn)
-
 	b.Players = append(b.Players, p)
 }
 
-func (b *Board) Run() {
-	// maximum players treatment
-	b.Deck.Shuffle()
+func (b *Board) Run() error {
+	// maximum Players treatment
+	b.deck.Shuffle()
 
 	b.drawPlayersHand()
 
 	b.buildField()
 
-	b.run()
+	return b.run()
 }
 
 func (b *Board) drawPlayersHand() {
 	totalCards := INITIAL_HAND_CARDS * len(b.Players)
 
 	for i := 0; i < totalCards; i++ {
-		card := *b.Deck.Pop()
-		playerSelection := i % len(b.Players)
+		card := *b.deck.Pop()
+		PlayerSelection := i % len(b.Players)
 
-		b.Players[playerSelection].Draw(card)
+		b.Players[PlayerSelection].draw(card)
 	}
 
 	b.drawPlayerTurn()
@@ -65,7 +78,7 @@ func (b *Board) buildField() {
 	for i := 0; i < noCornerFieldsNumber; i++ {
 		fieldSelection := i % noCornerFieldsNumber
 
-		card := *b.Deck.PopNoKing()
+		card := *b.deck.PopNoKing()
 
 		b.Field[fieldSelection] = []deck.Card{card}
 	}
@@ -92,39 +105,33 @@ func (b *Board) setNextTurn() {
 }
 
 func (b *Board) drawPlayerTurn() {
-	card := b.Deck.Pop()
-	b.Players[b.CurrentTurn].Draw(*card)
+	card := b.deck.Pop()
+	b.Players[b.CurrentTurn].draw(*card)
 }
 
-func (b *Board) run() {
-	b.pubsub.Publish("game", *b)
-
-	for {
-		select {
-		case t := <-b.PlayTurn:
-			b.play(t)
-		}
-	}
+func (b *Board) run() error {
+	b.IsStarted = true
+	return b.pubsub.Publish("game", *b)
 }
 
-func (b *Board) play(t Turn) {
+func (b *Board) play(t Turn) error {
 	err := t.Play(b)
 	if err != nil {
-		return
+		return err
 	}
 
 	if b.hasWinner() {
-		b.endGame()
+		b.endGame() // TODO
 	}
 
-	b.pubsub.Publish("game", *b)
+	err = b.pubsub.Publish(b.channel(), *b)
 
-	return
+	return err
 }
 
 func (b *Board) hasWinner() bool {
 	for _, p := range b.Players {
-		if p.IsWinner() {
+		if p.isWinner() {
 			return true
 		}
 	}
@@ -132,6 +139,4 @@ func (b *Board) hasWinner() bool {
 	return false
 }
 
-func (b *Board) endGame() {
-	close(b.PlayTurn)
-}
+func (b *Board) endGame() {}

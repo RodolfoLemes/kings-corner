@@ -25,10 +25,11 @@ func BoardDomainToPb(b game.Board) *pb.Board {
 	}
 
 	return &pb.Board{
-		Id:          "example",
+		Id:          b.ID,
 		PlayerIds:   playerIDs,
 		Fields:      pbFields,
 		CurrentTurn: uint32(b.CurrentTurn),
+		IsStarted:   b.IsStarted,
 	}
 }
 
@@ -36,5 +37,12 @@ func CardDomainToPb(c deck.Card) *pb.Card {
 	return &pb.Card{
 		Suit: uint32(c.Suit),
 		Rank: uint32(c.Rank),
+	}
+}
+
+func CardPbToDomain(pb *pb.Card) deck.Card {
+	return deck.Card{
+		Suit: deck.Suit(pb.Suit),
+		Rank: deck.Rank(pb.Rank),
 	}
 }

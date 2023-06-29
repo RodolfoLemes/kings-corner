@@ -76,7 +76,7 @@ func (ct *CardTurn) Play(b *Board) error {
 	}
 
 	*selectedField = append(*selectedField, ct.Card)
-	ct.player.Play(ct.Card)
+	ct.player.withdraw(ct.Card)
 
 	return nil
 }

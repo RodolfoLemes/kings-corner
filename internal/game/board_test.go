@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupBoard() Board {
+func setupBoard() *Board {
 	d := deck.New()
 	return New(d)
 }
@@ -17,9 +17,8 @@ func TestNew(t *testing.T) {
 	d := deck.New()
 	b := New(d)
 
-	assert.Equal(t, b.Deck, d)
+	assert.Equal(t, b.deck, d)
 	assert.Equal(t, len(b.Field), int(FIELDS_NUMBER))
-	assert.NotNil(t, b.PlayTurn)
 	assert.Empty(t, b.Players)
 	assert.Equal(t, int(b.CurrentTurn), 0)
 }

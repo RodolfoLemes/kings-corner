@@ -22,7 +22,6 @@ func TestNewPLayer(t *testing.T) {
 	kcPLayer := player.(*kcPlayer)
 
 	assert.Empty(t, kcPLayer.hand)
-	assert.Nil(t, kcPLayer.playTurn)
 }
 
 func TestDraw(t *testing.T) {
@@ -30,35 +29,25 @@ func TestDraw(t *testing.T) {
 
 	card := generateRandomCard()
 
-	player.Draw(card)
+	player.draw(card)
 
 	kcPLayer := player.(*kcPlayer)
 
 	assert.True(t, card.IsEqual(kcPLayer.hand[0]))
 }
 
-func TestPlay(t *testing.T) {
+func TestWithdraw(t *testing.T) {
 	player := NewPlayer()
 
 	card := generateRandomCard()
 
-	player.Draw(card)
+	player.draw(card)
 
-	player.Play(card)
+	player.withdraw(card)
 
 	kcPLayer := player.(*kcPlayer)
 
 	assert.Equal(t, len(kcPLayer.hand), 0)
-}
-
-func TestSetPlayTurn(t *testing.T) {
-	player := NewPlayer()
-
-	player.setPlayTurn(make(chan<- Turn))
-
-	kcPLayer := player.(*kcPlayer)
-
-	assert.NotNil(t, kcPLayer.playTurn)
 }
 
 func generateRandomCard() deck.Card {

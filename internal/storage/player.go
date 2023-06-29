@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 
-	"github.com/rs/xid"
+	"kings-corner/internal/game"
 )
 
 type Player struct {
@@ -12,19 +12,19 @@ type Player struct {
 }
 
 type PlayerRepository interface {
-	JoinBoard(boardID string) (*Player, error)
+	Create(player game.Player, boardID string) (*Player, error)
 	GetByID(playerID string) (*Player, error)
 }
 
-func (in *inMemoryPlayerRepository) JoinBoard(boardID string) (*Player, error) {
-	player := &Player{
-		ID:      xid.New().String(),
+func (in *inMemoryPlayerRepository) Create(player game.Player, boardID string) (*Player, error) {
+	p := &Player{
+		ID:      player.ID(),
 		BoardID: boardID,
 	}
 
-	in.players[player.ID] = player
+	in.players[p.ID] = p
 
-	return player, nil
+	return p, nil
 }
 
 func (in *inMemoryPlayerRepository) GetByID(playerID string) (*Player, error) {

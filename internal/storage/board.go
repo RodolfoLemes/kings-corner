@@ -4,28 +4,36 @@ import (
 	"errors"
 
 	"kings-corner/internal/game"
-
-	"github.com/rs/xid"
 )
 
 type Board struct {
-	ID string
 	game.Board
 }
 
 type BoardRepository interface {
 	Create(b game.Board) (*Board, error)
+	Update(b game.Board) error
 	GetByID(boardID string) (*Board, error)
 }
 
 func (in *inMemoryBoardRepository) Create(b game.Board) (*Board, error) {
-	id := xid.New().String()
+	board := &Board{b}
 
-	board := &Board{id, b}
-
-	in.boards[id] = board
+	in.boards[b.ID] = board
 
 	return board, nil
+}
+
+func (in *inMemoryBoardRepository) Update(b game.Board) error {
+	_, found := in.boards[b.ID]
+
+	if !found {
+		return errors.New("board not found")
+	}
+
+	in.boards[b.ID] = &Board{b}
+
+	return nil
 }
 
 func (in *inMemoryBoardRepository) GetByID(boardID string) (*Board, error) {
