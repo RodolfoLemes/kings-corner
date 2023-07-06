@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"log"
 
 	"kings-corner/internal/deck"
 	"kings-corner/internal/game"
@@ -27,7 +28,9 @@ func (s *PlayerService) Join(req *pb.JoinRequest, stream pb.PlayerService_JoinSe
 		return status.Errorf(codes.Internal, err.Error())
 	}
 
-	err = handleBoardListenEvent(board, *player, stream)
+	log.Printf("player %s joined in board %s", player.ID(), board.ID)
+
+	err = handleBoardListenEvent(board, player, stream)
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
 	}
@@ -69,6 +72,8 @@ func (s *PlayerService) Play(_ context.Context, req *pb.PlayRequest) (*pb.PlayRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	log.Printf("player %s played", req.PlayerId)
 
 	return &pb.PlayResponse{}, nil
 }

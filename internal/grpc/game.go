@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"log"
 
 	"kings-corner/internal/services"
 	"kings-corner/pkg/pb"
@@ -26,6 +27,8 @@ func (s *GameService) Create(_ *pb.CreateRequest, stream pb.GameService_CreateSe
 		return status.Errorf(codes.Internal, err.Error())
 	}
 
+	log.Printf("board %s created", board.ID)
+
 	err = handleBoardListenEvent(board, board.Players[0], stream)
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
@@ -39,6 +42,8 @@ func (s *GameService) Begin(_ context.Context, req *pb.BeginRequest) (*pb.BeginR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	log.Printf("board %s began", req.Id)
 
 	return &pb.BeginResponse{}, nil
 }

@@ -40,7 +40,7 @@ func (bs *BoardService) Create() (*game.Board, error) {
 	return board, nil
 }
 
-func (bs *BoardService) Join(boardID string) (*game.Board, *game.Player, error) {
+func (bs *BoardService) Join(boardID string) (*game.Board, game.Player, error) {
 	board, err := bs.boardRepository.GetByID(boardID)
 	if err != nil {
 		return nil, nil, err
@@ -59,7 +59,7 @@ func (bs *BoardService) Join(boardID string) (*game.Board, *game.Player, error) 
 		return nil, nil, err
 	}
 
-	return &board.Board, &player, nil
+	return &board.Board, player, nil
 }
 
 func (bs *BoardService) Run(boardID string) error {
