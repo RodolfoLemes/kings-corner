@@ -34,8 +34,8 @@ func (ca *CreateAction) Action(cCtx *cli.Context) error {
 			break
 		}
 
-		fmt.Printf("GameID => %s", stream.Board.Id)
-		fmt.Printf("PlayerID => %s", stream.PlayerId)
+		fmt.Printf("GameID => %s \n", stream.Board.Id)
+		fmt.Printf("PlayerID => %s \n", stream.PlayerId)
 		if !stream.Board.IsStarted {
 			continue
 		}
