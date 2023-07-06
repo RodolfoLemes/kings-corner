@@ -45,6 +45,7 @@ func (b Board) channel() string {
 }
 
 func (b *Board) Join(p Player) {
+	p.setPlay(b.play)
 	b.Players = append(b.Players, p)
 }
 
@@ -111,7 +112,7 @@ func (b *Board) drawPlayerTurn() {
 
 func (b *Board) run() error {
 	b.IsStarted = true
-	return b.pubsub.Publish("game", *b)
+	return b.pubsub.Publish(b.channel(), *b)
 }
 
 func (b *Board) play(t Turn) error {
