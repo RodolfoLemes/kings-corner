@@ -23,21 +23,26 @@ type Board struct {
 	deck    deck.Deck
 	Players []Player
 
-	pubsub pubsub.PubSub[Board]
+	pubsub          pubsub.PubSub[Board]
+	listenSubscribe <-chan Board
 }
 
 func New(d deck.Deck) *Board {
-	return &Board{
+	b := &Board{
 		ID:      xid.New().String(),
 		Field:   [FIELDS_NUMBER][]deck.Card{},
 		deck:    d,
 		Players: []Player{},
 		pubsub:  pubsub.New[Board](),
 	}
+
+	b.listenSubscribe = b.pubsub.Subscribe(b.channel())
+
+	return b
 }
 
 func (b *Board) Listen() Board {
-	return <-b.pubsub.Subscribe(b.channel())
+	return <-b.listenSubscribe
 }
 
 func (b Board) channel() string {
