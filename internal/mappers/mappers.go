@@ -24,9 +24,17 @@ func BoardDomainToPb(b game.Board) *pb.Board {
 		})
 	}
 
+	pbPlayers := []*pb.Board_Player{}
+	for _, p := range b.Players {
+		pbPlayers = append(pbPlayers, &pb.Board_Player{
+			Id:   p.ID(),
+			Hand: uint32(len(p.Hand())),
+		})
+	}
+
 	return &pb.Board{
 		Id:          b.ID,
-		PlayerIds:   playerIDs,
+		Players:     pbPlayers,
 		Fields:      pbFields,
 		CurrentTurn: uint32(b.CurrentTurn),
 		IsStarted:   b.IsStarted,

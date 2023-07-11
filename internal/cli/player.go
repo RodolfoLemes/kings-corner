@@ -95,10 +95,12 @@ func (j *JoinAction) Action(cCtx *cli.Context) error {
 			fieldLevel := index
 
 			_, err = j.playerClient.Play(cCtx.Context, &pb.PlayRequest{
-				Turn: pb.PlayRequest_CARD,
-				CardTurn: &pb.PlayRequest_CardTurn{
-					FieldLevel: uint32(fieldLevel),
-					Card:       playedCard,
+				TurnMode: pb.PlayRequest_CARD,
+				Turn: &pb.PlayRequest_CardTurn_{
+					CardTurn: &pb.PlayRequest_CardTurn{
+						FieldLevel: uint32(fieldLevel),
+						Card:       playedCard,
+					},
 				},
 				PlayerId: stream.PlayerId,
 				GameId:   gameID,

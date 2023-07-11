@@ -40,17 +40,20 @@ func (s *PlayerService) Join(req *pb.JoinRequest, stream pb.PlayerService_JoinSe
 
 func (s *PlayerService) Play(_ context.Context, req *pb.PlayRequest) (*pb.PlayResponse, error) {
 	var turn game.Turn
-	switch req.Turn {
+	switch req.TurnMode {
 	case pb.PlayRequest_CARD:
+		pbTurn := req.Turn.(*pb.PlayRequest_CardTurn_).CardTurn
+
 		turn = &game.CardTurn{
-			FieldLevel: uint8(req.CardTurn.FieldLevel),
+			FieldLevel: uint8(pbTurn.FieldLevel),
 			Card: deck.Card{
-				Suit: deck.Suit(req.CardTurn.Card.Suit),
-				Rank: deck.Rank(req.CardTurn.Card.Rank),
+				Suit: deck.Suit(pbTurn.Card.Suit),
+				Rank: deck.Rank(pbTurn.Card.Rank),
 			},
 		}
 	case pb.PlayRequest_MOVE:
-		if len(req.MoveTurn.FieldCardLevel) != 2 {
+		pbTurn := req.Turn.(*pb.PlayRequest_MoveTurn_).MoveTurn
+		if len(pbTurn.FieldCardLevel) != 2 {
 			return nil, status.Error(
 				codes.InvalidArgument,
 				"invalid field card level, should have 2 elements",
@@ -59,10 +62,10 @@ func (s *PlayerService) Play(_ context.Context, req *pb.PlayRequest) (*pb.PlayRe
 
 		turn = &game.MoveTurn{
 			FieldLevel: [2]uint8{
-				uint8(req.MoveTurn.FieldCardLevel[0]),
-				uint8(req.MoveTurn.FieldCardLevel[1]),
+				uint8(pbTurn.FieldCardLevel[0]),
+				uint8(pbTurn.FieldCardLevel[1]),
 			},
-			MoveToFieldLevel: uint8(req.MoveTurn.MoveToFieldLevel),
+			MoveToFieldLevel: uint8(pbTurn.MoveToFieldLevel),
 		}
 	case pb.PlayRequest_PASS:
 		turn = &game.PassTurn{}
