@@ -31,9 +31,11 @@ func (ca *CreateAction) Action(cCtx *cli.Context) error {
 		}
 
 		if err == io.EOF {
+			log.Fatalf("EOF")
 			break
 		}
 
+		fmt.Printf("Stream: %+v\n", stream)
 		fmt.Printf("GameID => %s \n", stream.Board.Id)
 		fmt.Printf("PlayerID => %s \n", stream.PlayerId)
 		if !stream.Board.IsStarted {
@@ -91,23 +93,25 @@ func (ca *CreateAction) Action(cCtx *cli.Context) error {
 
 			fieldLevel := index
 
-			resp, err := ca.playerClient.Play(cCtx.Context, &pb.PlayRequest{
-				TurnMode: pb.PlayRequest_CARD,
-				Turn: &pb.PlayRequest_CardTurn_{
-					CardTurn: &pb.PlayRequest_CardTurn{
-						FieldLevel: uint32(fieldLevel),
-						Card:       playedCard,
+			go func() {
+				resp, err := ca.playerClient.Play(cCtx.Context, &pb.PlayRequest{
+					TurnMode: pb.PlayRequest_CARD,
+					Turn: &pb.PlayRequest_CardTurn_{
+						CardTurn: &pb.PlayRequest_CardTurn{
+							FieldLevel: uint32(fieldLevel),
+							Card:       playedCard,
+						},
 					},
-				},
-				PlayerId: stream.PlayerId,
-				GameId:   stream.Board.Id,
-			})
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
+					PlayerId: stream.PlayerId,
+					GameId:   stream.Board.Id,
+				})
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
 
-			fmt.Printf("resp: %v\n", resp)
+				fmt.Printf("resp: %v\n", resp)
+			}()
 		}
 	}
 

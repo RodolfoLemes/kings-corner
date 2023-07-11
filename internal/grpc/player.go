@@ -6,6 +6,7 @@ import (
 
 	"kings-corner/internal/deck"
 	"kings-corner/internal/game"
+	"kings-corner/internal/pubsub"
 	"kings-corner/internal/services"
 	pb "kings-corner/pkg/pb"
 
@@ -15,11 +16,13 @@ import (
 
 type PlayerService struct {
 	boardService *services.BoardService
+	boardPubsub  pubsub.PubSub[game.Board]
+
 	pb.UnimplementedPlayerServiceServer
 }
 
-func NewPlayerService(b *services.BoardService) *PlayerService {
-	return &PlayerService{b, pb.UnimplementedPlayerServiceServer{}}
+func NewPlayerService(b *services.BoardService, boardPubsub pubsub.PubSub[game.Board]) *PlayerService {
+	return &PlayerService{b, boardPubsub, pb.UnimplementedPlayerServiceServer{}}
 }
 
 func (s *PlayerService) Join(req *pb.JoinRequest, stream pb.PlayerService_JoinServer) error {
@@ -30,7 +33,8 @@ func (s *PlayerService) Join(req *pb.JoinRequest, stream pb.PlayerService_JoinSe
 
 	log.Printf("player %s joined in board %s", player.ID(), board.ID)
 
-	err = handleBoardListenEvent(board, player, stream)
+	event := NewEventHandler(player, stream)
+	err = event.Handle(board, s.boardPubsub.Subscribe(board.Channel()))
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
 	}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"kings-corner/internal/game"
 	"kings-corner/internal/grpc"
+	"kings-corner/internal/pubsub"
 	"kings-corner/internal/services"
 	"kings-corner/internal/storage"
 )
@@ -9,10 +11,12 @@ import (
 func main() {
 	s := storage.New()
 
-	boardService := services.NewBoardService(s.BoardRepository(), s.PlayerRepository())
+	boardPs := pubsub.New[game.Board]()
 
-	grpcGameService := grpc.NewGameService(boardService)
-	grpcPlayerService := grpc.NewPlayerService(boardService)
+	boardService := services.NewBoardService(s.BoardRepository(), s.PlayerRepository(), boardPs)
+
+	grpcGameService := grpc.NewGameService(boardService, boardPs)
+	grpcPlayerService := grpc.NewPlayerService(boardService, boardPs)
 	gServer := grpc.New(s, grpcGameService, grpcPlayerService)
 
 	s.Run()

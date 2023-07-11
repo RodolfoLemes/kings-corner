@@ -20,15 +20,15 @@ type Player interface {
 	Hand() []deck.Card
 	draw(card deck.Card)
 	withdraw(card deck.Card)
-	setPlay(Play)
 	isWinner() bool
+	setBoard(*Board)
 }
 
 type kcPlayer struct {
 	id   string
 	hand []deck.Card
 
-	playFunc Play
+	board *Board
 }
 
 func (p *kcPlayer) ID() string {
@@ -58,11 +58,11 @@ func (p *kcPlayer) withdraw(card deck.Card) {
 
 func (p *kcPlayer) Play(t Turn) error {
 	t.setPlayer(p)
-	return p.playFunc(t)
+	return p.board.play(t)
 }
 
-func (p *kcPlayer) setPlay(playFunc Play) {
-	p.playFunc = playFunc
+func (p *kcPlayer) setBoard(b *Board) {
+	p.board = b
 }
 
 func (p *kcPlayer) isWinner() bool {

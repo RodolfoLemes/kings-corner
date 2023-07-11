@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"kings-corner/internal/deck"
-	"kings-corner/internal/pubsub"
 
 	"github.com/rs/xid"
 )
@@ -22,9 +21,6 @@ type Board struct {
 
 	deck    deck.Deck
 	Players []Player
-
-	pubsub          pubsub.PubSub[Board]
-	listenSubscribe <-chan Board
 }
 
 func New(d deck.Deck) *Board {
@@ -33,24 +29,17 @@ func New(d deck.Deck) *Board {
 		Field:   [FIELDS_NUMBER][]deck.Card{},
 		deck:    d,
 		Players: []Player{},
-		pubsub:  pubsub.New[Board](),
 	}
-
-	b.listenSubscribe = b.pubsub.Subscribe(b.channel())
 
 	return b
 }
 
-func (b *Board) Listen() Board {
-	return <-b.listenSubscribe
-}
-
-func (b Board) channel() string {
+func (b Board) Channel() string {
 	return fmt.Sprintf("game:%s", b.ID)
 }
 
 func (b *Board) Join(p Player) {
-	p.setPlay(b.play)
+	p.setBoard(b)
 	b.Players = append(b.Players, p)
 }
 
@@ -117,7 +106,7 @@ func (b *Board) drawPlayerTurn() {
 
 func (b *Board) run() error {
 	b.IsStarted = true
-	return b.pubsub.Publish(b.channel(), *b)
+	return nil
 }
 
 func (b *Board) play(t Turn) error {
@@ -129,8 +118,6 @@ func (b *Board) play(t Turn) error {
 	if b.hasWinner() {
 		b.endGame() // TODO
 	}
-
-	err = b.pubsub.Publish(b.channel(), *b)
 
 	return err
 }
@@ -145,4 +132,5 @@ func (b *Board) hasWinner() bool {
 	return false
 }
 
+// TODO
 func (b *Board) endGame() {}

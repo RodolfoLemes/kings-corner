@@ -54,3 +54,12 @@ func CardPbToDomain(pb *pb.Card) deck.Card {
 		Rank: deck.Rank(pb.Rank),
 	}
 }
+
+func BuildPbHand(hand []deck.Card) []*pb.Card {
+	pbHand := []*pb.Card{}
+	for _, c := range hand {
+		pbHand = append(pbHand, CardDomainToPb(c))
+	}
+
+	return pbHand
+}

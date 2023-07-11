@@ -5,19 +5,23 @@ import (
 
 	"kings-corner/internal/deck"
 	"kings-corner/internal/game"
+	"kings-corner/internal/pubsub"
 	"kings-corner/internal/storage"
 )
 
 type BoardService struct {
 	boardRepository  storage.BoardRepository
 	playerRepository storage.PlayerRepository
+
+	boardPubsub pubsub.PubSub[game.Board]
 }
 
 func NewBoardService(
 	boardRepository storage.BoardRepository,
 	playerRepository storage.PlayerRepository,
+	boardPubsub pubsub.PubSub[game.Board],
 ) *BoardService {
-	return &BoardService{boardRepository, playerRepository}
+	return &BoardService{boardRepository, playerRepository, boardPubsub}
 }
 
 func (bs *BoardService) Create() (*game.Board, error) {
@@ -59,7 +63,9 @@ func (bs *BoardService) Join(boardID string) (*game.Board, game.Player, error) {
 		return nil, nil, err
 	}
 
-	return &board.Board, player, nil
+	err = bs.boardPubsub.Publish(board.Channel(), board.Board)
+
+	return &board.Board, player, err
 }
 
 func (bs *BoardService) Run(boardID string) error {
@@ -68,7 +74,17 @@ func (bs *BoardService) Run(boardID string) error {
 		return err
 	}
 
-	return board.Run()
+	err = board.Run()
+	if err != nil {
+		return err
+	}
+
+	err = bs.boardRepository.Update(board.Board)
+	if err != nil {
+		return err
+	}
+
+	return bs.boardPubsub.Publish(board.Channel(), board.Board)
 }
 
 func (bs *BoardService) Play(boardID string, playerID string, turn game.Turn) error {
@@ -95,6 +111,14 @@ func (bs *BoardService) Play(boardID string, playerID string, turn game.Turn) er
 	}
 
 	err = player.Play(turn)
+	if err != nil {
+		return err
+	}
 
-	return err
+	err = bs.boardRepository.Update(board.Board)
+	if err != nil {
+		return err
+	}
+
+	return bs.boardPubsub.Publish(board.Channel(), board.Board)
 }

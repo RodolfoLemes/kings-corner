@@ -34,17 +34,16 @@ func (j *JoinAction) Action(cCtx *cli.Context) error {
 		}
 
 		if err == io.EOF {
+			log.Fatalf("EOF")
 			break
 		}
 
+		fmt.Printf("Stream: %+v\n", stream)
 		fmt.Printf("PlayerID => %s", stream.PlayerId)
 
 		if !stream.Board.IsStarted {
 			continue
 		}
-
-		j.printBoard(stream.Board)
-		j.printHand(stream.Hand)
 
 		if !stream.IsPlayerTurn {
 			continue
@@ -94,21 +93,22 @@ func (j *JoinAction) Action(cCtx *cli.Context) error {
 
 			fieldLevel := index
 
-			_, err = j.playerClient.Play(cCtx.Context, &pb.PlayRequest{
-				TurnMode: pb.PlayRequest_CARD,
-				Turn: &pb.PlayRequest_CardTurn_{
-					CardTurn: &pb.PlayRequest_CardTurn{
-						FieldLevel: uint32(fieldLevel),
-						Card:       playedCard,
+			go func() {
+				_, err = j.playerClient.Play(cCtx.Context, &pb.PlayRequest{
+					TurnMode: pb.PlayRequest_CARD,
+					Turn: &pb.PlayRequest_CardTurn_{
+						CardTurn: &pb.PlayRequest_CardTurn{
+							FieldLevel: uint32(fieldLevel),
+							Card:       playedCard,
+						},
 					},
-				},
-				PlayerId: stream.PlayerId,
-				GameId:   gameID,
-			})
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
+					PlayerId: stream.PlayerId,
+					GameId:   gameID,
+				})
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
 		}
 	}
 

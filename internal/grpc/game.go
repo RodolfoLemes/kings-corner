@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"kings-corner/internal/game"
+	"kings-corner/internal/pubsub"
 	"kings-corner/internal/services"
 	"kings-corner/pkg/pb"
 
@@ -13,12 +15,13 @@ import (
 
 type GameService struct {
 	boardService *services.BoardService
+	boardPubsub  pubsub.PubSub[game.Board]
 
 	pb.UnimplementedGameServiceServer
 }
 
-func NewGameService(b *services.BoardService) *GameService {
-	return &GameService{b, pb.UnimplementedGameServiceServer{}}
+func NewGameService(b *services.BoardService, boardPubsub pubsub.PubSub[game.Board]) *GameService {
+	return &GameService{b, boardPubsub, pb.UnimplementedGameServiceServer{}}
 }
 
 func (s *GameService) Create(_ *pb.CreateRequest, stream pb.GameService_CreateServer) error {
@@ -29,7 +32,8 @@ func (s *GameService) Create(_ *pb.CreateRequest, stream pb.GameService_CreateSe
 
 	log.Printf("board %s created", board.ID)
 
-	err = handleBoardListenEvent(board, board.Players[0], stream)
+	event := NewEventHandler(board.Players[0], stream)
+	err = event.Handle(board, s.boardPubsub.Subscribe(board.Channel()))
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
 	}
