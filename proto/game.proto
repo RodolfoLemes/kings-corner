@@ -28,8 +28,13 @@ message Board {
     repeated Card cards = 2;
   }
 
+  message Player {
+    string id = 1;
+    uint32 hand = 2;
+  }
+
   string id = 1;
-  repeated string player_ids = 2;
+  repeated Player players = 2;
   repeated Field fields = 3;
   uint32 current_turn = 4;
   bool is_started = 5;
@@ -70,9 +75,11 @@ message PlayRequest {
 
   string game_id = 1;
   string player_id = 2;
-  Turn turn = 3;
-  CardTurn card_turn = 4;
-  MoveTurn move_turn = 5;
+  Turn turn_mode = 3;
+  oneof turn {
+    CardTurn card_turn = 4;
+    MoveTurn move_turn = 5;
+  }
 }
 
 message PlayResponse {}
